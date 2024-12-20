@@ -22,46 +22,87 @@ const getState = ({ getStore, getActions, setStore }) => {
 				getActions().changeColor(0, "green");
 			},
 
-			login:async(email, password) =>{
-				try{const opts = {
-					method: 'POST',
-					headers:{
-						"Content-Type": "application/json"
-					},
-					body: JSON.stringify({
-						"email": email,
-						"password": password
-					})
-				}
-				
-					const resp = await fetch('https://fictional-yodel-r74v4v99jx93xxjr-3001.app.github.dev/api/token', opts);
-							if(resp.status !== 200) {
-								alert("There has been and error!");
-								return false;
-							}
-					
-					const data = await resp.json;
-					console.log("Backend: ", data);
-					sessionStorage.setItem("token", data.access_token);
-					setStore({token: data.access_token});
+			login:async(email, password) => {
+				try{
+					const resp = await fetch(process.env.BACKEND_URL + "/api/token", {
+						method: "POST",
+						headers: { "Content-Type": "application/json" },
+						body: JSON.stringify({
+							email: email,
+							password: password
+						})
+					});
+					if(!resp.ok){
+						console.log("Error!", resp.status);
+						return false;
+					}
+
+					const data = await resp.json();
+					sessionStorage.setItem("token", data.token);
+					sessionStorage.setItem("user_id", data.user_id);
 					return true;
-					}
-					catch(error){
-						console.error("Error! ", error);
-					}
-					
+				} catch(error){
+					console.log("Error!", error);
+					return false;
+				}
 			},
+			signup:async(email, password) => {
+				try {
+					const resp = await fetch(process.env.BACKEND_URL + "/api/signup", {
+						method: "POST",
+						headers: { "Content-Type": "application/json" },
+						body: JSON.stringify({
+							email: email,
+							password: password
+						})
+					});
+					const data = await resp.json();
+					console.log("Backend: ", data);
+					return data
+				} catch(error){
+					console.error("Error!", error);
+					throw error;
+				}
+			},
+
+			isPrivate: async () => {
+				const token = sessionStorage.getItem("token");
+				if(!token){
+					console.error("No Token!");
+					return false;
+				}
+				try {
+					const resp = await fetch(process.env.BACKEND_URL + "/api/private", {
+						method: "GET",
+						headers:{ 
+							"Content-Type": "application/json" , 
+							"Authorization": `Bearer ${token}`
+						},
+					});
+					const data = await resp.json();
+					if(!resp.ok){
+						return false;
+					} else{
+						console.log("Backend: ", data);
+						return true;
+					}
+				} catch(error) {
+					console.error("Error!", error);
+					return false;
+				}
+			
+		},
 
 			getMessage: async () => {
 				try{
 					// fetching data from the backend
-					const resp = await fetch(process.env.BACKEND_URL + "/api/hello")
-					const data = await resp.json()
-					setStore({ message: data.message })
+					const resp = await fetch(process.env.BACKEND_URL + "/api/hello");
+					const data = await resp.json();
+					setStore({ message: data.message });
 					// don't forget to return something, that is how the async resolves
 					return data;
 				}catch(error){
-					console.log("Error loading message from backend", error)
+					console.log("Error loading message from backend", error);
 				}
 			},
 			changeColor: (index, color) => {
@@ -77,9 +118,9 @@ const getState = ({ getStore, getActions, setStore }) => {
 
 				//reset the global store
 				setStore({ demo: demo });
-			}
-		}
+			}}
+		};
 	};
-};
+
 
 export default getState;
