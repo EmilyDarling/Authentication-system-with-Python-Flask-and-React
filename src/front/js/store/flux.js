@@ -1,6 +1,7 @@
 const getState = ({ getStore, getActions, setStore }) => {
 	return {
 		store: {
+			token: null,
 			message: null,
 			demo: [
 				{
@@ -19,6 +20,36 @@ const getState = ({ getStore, getActions, setStore }) => {
 			// Use getActions to call a function within a fuction
 			exampleFunction: () => {
 				getActions().changeColor(0, "green");
+			},
+
+			login:async(email, password) =>{
+				try{const opts = {
+					method: 'POST',
+					headers:{
+						"Content-Type": "application/json"
+					},
+					body: JSON.stringify({
+						"email": email,
+						"password": password
+					})
+				}
+				
+					const resp = await fetch('https://fictional-yodel-r74v4v99jx93xxjr-3001.app.github.dev/api/token', opts);
+							if(resp.status !== 200) {
+								alert("There has been and error!");
+								return false;
+							}
+					
+					const data = await resp.json;
+					console.log("Backend: ", data);
+					sessionStorage.setItem("token", data.access_token);
+					setStore({token: data.access_token});
+					return true;
+					}
+					catch(error){
+						console.error("Error! ", error);
+					}
+					
 			},
 
 			getMessage: async () => {
